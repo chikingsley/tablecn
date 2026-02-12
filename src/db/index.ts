@@ -1,8 +1,10 @@
-import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { env } from "@/env.js";
+import { DATABASE_PREFIX } from "@/lib/constants";
 
-import * as schema from "./schema";
+export const db = postgres(env.DATABASE_URL);
 
-const client = postgres(env.DATABASE_URL);
-export const db = drizzle(client, { schema });
+export const DB_TABLES = {
+  tasks: `${DATABASE_PREFIX}_tasks`,
+  skaters: `${DATABASE_PREFIX}_skaters`,
+} as const;

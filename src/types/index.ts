@@ -1,5 +1,3 @@
-import type { SQL } from "drizzle-orm";
-
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
@@ -14,8 +12,8 @@ export interface SearchParams {
 }
 
 export interface QueryBuilderOpts {
-  where?: SQL;
-  orderBy?: SQL;
+  where?: unknown;
+  orderBy?: unknown;
   distinct?: boolean;
   nullish?: boolean;
 }

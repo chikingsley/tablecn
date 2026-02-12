@@ -16,8 +16,8 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
 - **Styling:** [Tailwind CSS](https://tailwindcss.com)
 - **UI Components:** [shadcn/ui](https://ui.shadcn.com)
 - **Table package:** [TanStack/react-table](https://tanstack.com/table/latest)
-- **Database:** [PlanetScale](https://planetscale.com)
-- **ORM:** [Drizzle ORM](https://orm.drizzle.team)
+- **Database:** Local [PostgreSQL](https://www.postgresql.org)
+- **Query Layer:** Vanilla SQL via [`postgres`](https://github.com/porsager/postgres)
 - **Validation:** [Zod](https://zod.dev)
 
 ## Features

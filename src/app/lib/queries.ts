@@ -2,25 +2,42 @@
 
 import "server-only";
 
-import {
-  and,
-  asc,
-  count,
-  desc,
-  gt,
-  gte,
-  ilike,
-  inArray,
-  lte,
-  sql,
-} from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
-import { db } from "@/db";
-import { tasks } from "@/db/schema";
-
-import { filterColumns } from "@/lib/filter-columns";
+import { DB_TABLES, db } from "@/db";
+import type { Task } from "@/db/schema";
 
 import type { GetTasksSchema } from "./validations";
+
+type SqlParam = string | number | boolean | Date | null | string[];
+
+type RawTaskRow = {
+  id: string;
+  code: string;
+  title: string | null;
+  status: Task["status"];
+  priority: Task["priority"];
+  label: Task["label"];
+  estimatedHours: number | string;
+  archived: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string | null;
+};
+
+function mapTaskRow(row: RawTaskRow): Task {
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    status: row.status,
+    priority: row.priority,
+    label: row.label,
+    estimatedHours: Number(row.estimatedHours ?? 0),
+    archived: Boolean(row.archived),
+    createdAt:
+      row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
+    updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
+  };
+}
 
 export async function getTasks(input: GetTasksSchema) {
   cacheLife({ revalidate: 1, stale: 1, expire: 60 });
@@ -28,95 +45,89 @@ export async function getTasks(input: GetTasksSchema) {
 
   try {
     const offset = (input.page - 1) * input.perPage;
-    const advancedTable =
-      input.filterFlag === "advancedFilters" ||
-      input.filterFlag === "commandFilters";
+    const whereClauses: string[] = [];
+    const values: SqlParam[] = [];
 
-    const advancedWhere = filterColumns({
-      table: tasks,
-      filters: input.filters,
-      joinOperator: input.joinOperator,
-    });
+    if (input.title) {
+      whereClauses.push(`title ILIKE $${values.length + 1}`);
+      values.push(`%${input.title}%`);
+    }
+    if (input.status.length > 0) {
+      whereClauses.push(`status = ANY($${values.length + 1})`);
+      values.push(input.status);
+    }
+    if (input.priority.length > 0) {
+      whereClauses.push(`priority = ANY($${values.length + 1})`);
+      values.push(input.priority);
+    }
+    if (input.estimatedHours[0]) {
+      whereClauses.push(`estimated_hours >= $${values.length + 1}`);
+      values.push(input.estimatedHours[0]);
+    }
+    if (input.estimatedHours[1]) {
+      whereClauses.push(`estimated_hours <= $${values.length + 1}`);
+      values.push(input.estimatedHours[1]);
+    }
+    if (input.createdAt[0]) {
+      const start = new Date(input.createdAt[0]);
+      start.setHours(0, 0, 0, 0);
+      whereClauses.push(`created_at >= $${values.length + 1}`);
+      values.push(start);
+    }
+    if (input.createdAt[1]) {
+      const end = new Date(input.createdAt[1]);
+      end.setHours(23, 59, 59, 999);
+      whereClauses.push(`created_at <= $${values.length + 1}`);
+      values.push(end);
+    }
 
-    const where = advancedTable
-      ? advancedWhere
-      : and(
-          input.title ? ilike(tasks.title, `%${input.title}%`) : undefined,
-          input.status.length > 0
-            ? inArray(tasks.status, input.status)
-            : undefined,
-          input.priority.length > 0
-            ? inArray(tasks.priority, input.priority)
-            : undefined,
-          input.estimatedHours.length > 0
-            ? and(
-                input.estimatedHours[0]
-                  ? gte(tasks.estimatedHours, input.estimatedHours[0])
-                  : undefined,
-                input.estimatedHours[1]
-                  ? lte(tasks.estimatedHours, input.estimatedHours[1])
-                  : undefined,
-              )
-            : undefined,
-          input.createdAt.length > 0
-            ? and(
-                input.createdAt[0]
-                  ? gte(
-                      tasks.createdAt,
-                      (() => {
-                        const date = new Date(input.createdAt[0]);
-                        date.setHours(0, 0, 0, 0);
-                        return date;
-                      })(),
-                    )
-                  : undefined,
-                input.createdAt[1]
-                  ? lte(
-                      tasks.createdAt,
-                      (() => {
-                        const date = new Date(input.createdAt[1]);
-                        date.setHours(23, 59, 59, 999);
-                        return date;
-                      })(),
-                    )
-                  : undefined,
-              )
-            : undefined,
-        );
-
+    const whereSql =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const sortable = new Set([
+      "code",
+      "title",
+      "status",
+      "priority",
+      "label",
+      "estimatedHours",
+      "archived",
+      "createdAt",
+    ]);
     const orderBy =
       input.sort.length > 0
-        ? input.sort.map((item) =>
-            item.desc ? desc(tasks[item.id]) : asc(tasks[item.id]),
-          )
-        : [asc(tasks.createdAt)];
+        ? input.sort
+            .filter((item) => sortable.has(item.id))
+            .map((item) => {
+              const column =
+                item.id === "estimatedHours"
+                  ? "estimated_hours"
+                  : item.id === "createdAt"
+                    ? "created_at"
+                    : item.id;
+              return `${column} ${item.desc ? "DESC" : "ASC"}`;
+            })
+            .join(", ")
+        : "created_at ASC";
 
-    const { data, total } = await db.transaction(async (tx) => {
-      const data = await tx
-        .select()
-        .from(tasks)
-        .limit(input.perPage)
-        .offset(offset)
-        .where(where)
-        .orderBy(...orderBy);
+    const rows = await db.unsafe<RawTaskRow[]>(
+      `SELECT id, code, title, status, priority, label, estimated_hours AS "estimatedHours", archived, created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM ${DB_TABLES.tasks}
+       ${whereSql}
+       ORDER BY ${orderBy}
+       LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, input.perPage, offset],
+    );
 
-      const total = await tx
-        .select({
-          count: count(),
-        })
-        .from(tasks)
-        .where(where)
-        .execute()
-        .then((res) => res[0]?.count ?? 0);
+    const countRows = await db.unsafe<Array<{ count: string }>>(
+      `SELECT COUNT(*)::text AS count FROM ${DB_TABLES.tasks} ${whereSql}`,
+      values,
+    );
 
-      return {
-        data,
-        total,
-      };
-    });
-
-    const pageCount = Math.ceil(total / input.perPage);
-    return { data, pageCount };
+    const total = Number(countRows[0]?.count ?? 0);
+    return {
+      data: rows.map(mapTaskRow),
+      pageCount: Math.ceil(total / input.perPage),
+    };
   } catch {
     return { data: [], pageCount: 0 };
   }
@@ -125,87 +136,51 @@ export async function getTasks(input: GetTasksSchema) {
 export async function getTaskStatusCounts() {
   cacheLife("hours");
   cacheTag("task-status-counts");
-
   try {
-    return await db
-      .select({
-        status: tasks.status,
-        count: count(),
-      })
-      .from(tasks)
-      .groupBy(tasks.status)
-      .having(gt(count(tasks.status), 0))
-      .then((res) =>
-        res.reduce(
-          (acc, { status, count }) => {
-            acc[status] = count;
-            return acc;
-          },
-          {
-            todo: 0,
-            "in-progress": 0,
-            done: 0,
-            canceled: 0,
-          },
-        ),
-      );
+    const rows = await db.unsafe<Array<{ status: string; count: string }>>(
+      `SELECT status, COUNT(*)::text AS count FROM ${DB_TABLES.tasks} GROUP BY status HAVING COUNT(*) > 0`,
+    );
+    return rows.reduce(
+      (acc, { status, count }) => {
+        if (status in acc) acc[status as keyof typeof acc] = Number(count);
+        return acc;
+      },
+      { todo: 0, "in-progress": 0, done: 0, canceled: 0 },
+    );
   } catch {
-    return {
-      todo: 0,
-      "in-progress": 0,
-      done: 0,
-      canceled: 0,
-    };
+    return { todo: 0, "in-progress": 0, done: 0, canceled: 0 };
   }
 }
 
 export async function getTaskPriorityCounts() {
   cacheLife("hours");
   cacheTag("task-priority-counts");
-
   try {
-    return await db
-      .select({
-        priority: tasks.priority,
-        count: count(),
-      })
-      .from(tasks)
-      .groupBy(tasks.priority)
-      .having(gt(count(), 0))
-      .then((res) =>
-        res.reduce(
-          (acc, { priority, count }) => {
-            acc[priority] = count;
-            return acc;
-          },
-          {
-            low: 0,
-            medium: 0,
-            high: 0,
-          },
-        ),
-      );
+    const rows = await db.unsafe<Array<{ priority: string; count: string }>>(
+      `SELECT priority, COUNT(*)::text AS count FROM ${DB_TABLES.tasks} GROUP BY priority HAVING COUNT(*) > 0`,
+    );
+    return rows.reduce(
+      (acc, { priority, count }) => {
+        if (priority in acc) acc[priority as keyof typeof acc] = Number(count);
+        return acc;
+      },
+      { low: 0, medium: 0, high: 0 },
+    );
   } catch {
-    return {
-      low: 0,
-      medium: 0,
-      high: 0,
-    };
+    return { low: 0, medium: 0, high: 0 };
   }
 }
 
 export async function getEstimatedHoursRange() {
   cacheLife("hours");
   cacheTag("estimated-hours-range");
-
   try {
-    return await db
-      .select({
-        min: sql<number>`min(${tasks.estimatedHours})`,
-        max: sql<number>`max(${tasks.estimatedHours})`,
-      })
-      .from(tasks)
-      .then((res) => res[0] ?? { min: 0, max: 0 });
+    const [result] = await db.unsafe<
+      Array<{ min: number | null; max: number | null }>
+    >(
+      `SELECT COALESCE(MIN(estimated_hours), 0) AS min, COALESCE(MAX(estimated_hours), 0) AS max FROM ${DB_TABLES.tasks}`,
+    );
+    return { min: Number(result?.min ?? 0), max: Number(result?.max ?? 0) };
   } catch {
     return { min: 0, max: 0 };
   }

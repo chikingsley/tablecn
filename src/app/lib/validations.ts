@@ -21,10 +21,10 @@ export const searchParamsCache = createSearchParamsCache({
   ]),
   title: parseAsString.withDefault(""),
   status: parseAsArrayOf(
-    parseAsStringEnum(tasks.status.enumValues),
+    parseAsStringEnum([...tasks.status.enumValues]),
   ).withDefault([]),
   priority: parseAsArrayOf(
-    parseAsStringEnum(tasks.priority.enumValues),
+    parseAsStringEnum([...tasks.priority.enumValues]),
   ).withDefault([]),
   estimatedHours: parseAsArrayOf(parseAsInteger).withDefault([]),
   createdAt: parseAsArrayOf(parseAsInteger).withDefault([]),
