@@ -50,7 +50,7 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
 3. **Run the setup**
 
    ```bash
-   pnpm ollie
+   bun run ollie
    ```
 
    This will install dependencies, start the Docker PostgreSQL instance, set up the database schema, and seed it with sample data.
@@ -67,7 +67,7 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
 2. **Install dependencies**
 
    ```bash
-   pnpm install
+   bun install
    ```
 
 3. **Set up environment variables**
@@ -84,13 +84,13 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
 
    ```bash
    # Start PostgreSQL container
-   pnpm db:start
+   bun run db:start
    
    # Set up database schema and seed data
-   pnpm db:setup
+   bun run db:setup
    
    # Start development server
-   pnpm dev
+   bun run dev
    ```
 
    **Option B: Use existing PostgreSQL database**
@@ -98,10 +98,10 @@ See the [documentation](https://diceui.com/docs/components/data-table) to get st
    ```bash
    # Update .env with your database URL
    # Then set up database schema and seed data
-   pnpm db:setup
+   bun run db:setup
    
    # Start development server
-   pnpm dev
+   bun run dev
    ```
 
 ## How do I deploy this?

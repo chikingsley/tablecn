@@ -4,18 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "clean": "rimraf --glob **/node_modules **/dist **/.next pnpm-lock.yaml **/.tsbuildinfo",
+    "clean": "rimraf --glob **/node_modules **/dist **/.next bun.lock **/.tsbuildinfo",
     "build": "next build",
     "dev": "next dev",
     "test": "vitest run",
-    "dev:docker": "pnpm db:start && pnpm dev",
+    "dev:docker": "bun run db:start && bun run dev",
     "start": "next start",
-    "ollie": "pnpm install && pnpm run db:start && pnpm run db:setup",
+    "ollie": "bun install && bun run db:start && bun run db:setup",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm lint && pnpm typecheck",
-    "shadcn": "pnpm dlx shadcn@latest",
+    "check": "bun run lint && bun run typecheck",
+    "shadcn": "bunx shadcn@latest",
     "build:registry": "shadcn build",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
@@ -25,8 +25,8 @@
     "db:migrate": "dotenv tsx src/db/migrate.ts",
     "db:drop-migration": "drizzle-kit drop",
     "db:seed": "dotenv tsx src/db/seed.ts",
-    "db:setup": "pnpm db:push && pnpm db:seed",
-    "db:reset": "pnpm db:stop && rimraf docker-data && pnpm db:start && sleep 10 && pnpm db:setup",
+    "db:setup": "bun run db:push && bun run db:seed",
+    "db:reset": "bun run db:stop && rimraf docker-data && bun run db:start && sleep 10 && bun run db:setup",
     "db:studio": "dotenv drizzle-kit studio"
   },
   "dependencies": {
@@ -109,5 +109,5 @@
   "ct3aMetadata": {
     "initVersion": "7.23.1"
   },
-  "packageManager": "pnpm@10.26.1"
+  "packageManager": "bun@1.2.14"
 }

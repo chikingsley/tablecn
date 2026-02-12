@@ -19,14 +19,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 10.26.1
+          bun-version: 1.2.14
       - uses: ./.github/setup
 
       - name: Check formatting
-        run: pnpm lint:fix
+        run: bun run lint:fix
 
   lint:
     runs-on: ubuntu-latest
@@ -34,13 +34,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 10.26.1
+          bun-version: 1.2.14
       - uses: ./.github/setup
 
-      - run: pnpm lint
+      - run: bun run lint
 
   typecheck:
     runs-on: ubuntu-latest
@@ -48,13 +48,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 10.26.1
+          bun-version: 1.2.14
       - uses: ./.github/setup
 
-      - run: pnpm typecheck
+      - run: bun run typecheck
 
   test:
     runs-on: ubuntu-latest
@@ -62,10 +62,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 10.26.1
+          bun-version: 1.2.14
       - uses: ./.github/setup
 
-      - run: pnpm test
+      - run: bun run test
