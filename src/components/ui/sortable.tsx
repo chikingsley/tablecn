@@ -36,9 +36,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import { Slot } from "@/components/ui/slot";
 import { useComposedRefs } from "@/lib/compose-refs";
 import { cn } from "@/lib/utils";
 

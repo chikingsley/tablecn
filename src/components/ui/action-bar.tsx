@@ -1,10 +1,10 @@
 "use client";
 
 import { useDirection } from "@radix-ui/react-direction";
-import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { Button } from "@/components/ui/button";
+import { Slot } from "@/components/ui/slot";
 import { useAsRef } from "@/hooks/use-as-ref";
 import { useIsomorphicLayoutEffect } from "@/hooks/use-isomorphic-layout-effect";
 import { useComposedRefs } from "@/lib/compose-refs";
