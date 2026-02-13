@@ -32,12 +32,28 @@ CREATE TABLE IF NOT EXISTS ${DB_TABLES.skaters} (
   updated_at timestamp DEFAULT CURRENT_TIMESTAMP
 );`;
 
+const createMailsTable = `
+CREATE TABLE IF NOT EXISTS ${DB_TABLES.mails} (
+  id varchar(30) PRIMARY KEY,
+  name varchar(128) NOT NULL,
+  email varchar(256) NOT NULL,
+  subject varchar(512) NOT NULL,
+  body text NOT NULL DEFAULT '',
+  folder varchar(30) NOT NULL DEFAULT 'inbox'
+    CHECK (folder IN ('inbox', 'drafts', 'sent', 'junk', 'trash', 'archive')),
+  read boolean NOT NULL DEFAULT false,
+  labels jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp DEFAULT CURRENT_TIMESTAMP
+);`;
+
 export async function runMigrate() {
   console.log("⏳ Running SQL migrations...");
   const start = Date.now();
 
   await db.unsafe(createTasksTable);
   await db.unsafe(createSkatersTable);
+  await db.unsafe(createMailsTable);
 
   console.log(`✅ Migrations completed in ${Date.now() - start}ms`);
   process.exit(0);

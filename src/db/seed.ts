@@ -1,8 +1,9 @@
-import { seedSkaters, seedTasks } from "@/app/lib/seeds";
+import { seedMails, seedSkaters, seedTasks } from "@/app/lib/seeds";
 
 const SEED_FUNCTIONS = {
   tasks: () => seedTasks({ count: 100 }),
   skaters: () => seedSkaters({ count: 100 }),
+  mails: () => seedMails({ count: 50 }),
 } as const;
 
 type TableName = keyof typeof SEED_FUNCTIONS;

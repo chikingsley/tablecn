@@ -70,3 +70,46 @@ export const skaters = {
   style: { enumValues: [...SKATER_STYLE] },
   status: { enumValues: [...SKATER_STATUS] },
 } as const;
+
+export const MAIL_FOLDER = [
+  "inbox",
+  "drafts",
+  "sent",
+  "junk",
+  "trash",
+  "archive",
+] as const;
+
+export const MAIL_LABEL = [
+  "work",
+  "personal",
+  "important",
+  "social",
+  "updates",
+  "forums",
+  "shopping",
+  "promotions",
+] as const;
+
+export interface Mail {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  body: string;
+  folder: (typeof MAIL_FOLDER)[number];
+  read: boolean;
+  labels: (typeof MAIL_LABEL)[number][];
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
+export type NewMail = Omit<Mail, "createdAt" | "updatedAt"> & {
+  createdAt?: Date;
+  updatedAt?: Date | null;
+};
+
+export const mails = {
+  folder: { enumValues: [...MAIL_FOLDER] },
+  label: { enumValues: [...MAIL_LABEL] },
+} as const;

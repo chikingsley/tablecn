@@ -14,7 +14,14 @@ import {
   Timer,
 } from "lucide-react";
 import { customAlphabet } from "nanoid";
-import { type Skater, skaters, type Task, tasks } from "@/db/schema";
+import {
+  type Mail,
+  mails,
+  type Skater,
+  skaters,
+  type Task,
+  tasks,
+} from "@/db/schema";
 
 import { generateId } from "@/lib/id";
 
@@ -177,4 +184,64 @@ export function getStyleIcon(style: Skater["style"]) {
   };
 
   return styleIcons[style];
+}
+
+const emailSubjects = [
+  "Meeting Tomorrow",
+  "Re: Project Update",
+  "Weekly Report",
+  "New Feature Discussion",
+  "Bug Report: Login Issue",
+  "Team Lunch This Friday",
+  "Q4 Budget Review",
+  "Design Review Feedback",
+  "Deployment Schedule",
+  "Client Presentation Prep",
+  "Code Review Request",
+  "Sprint Retrospective Notes",
+  "Holiday Schedule",
+  "New Hire Onboarding",
+  "Performance Review",
+  "Infrastructure Migration Plan",
+  "API Documentation Updates",
+  "Security Audit Results",
+  "Product Roadmap Discussion",
+  "Customer Feedback Summary",
+] as const;
+
+export function generateRandomMail(input?: Partial<Mail>): Mail {
+  const firstName = faker.person.firstName();
+  const lastName = faker.person.lastName();
+  const labelCount = faker.number.int({ min: 0, max: 2 });
+  const labels =
+    labelCount > 0
+      ? (faker.helpers.arrayElements(
+          [...mails.label.enumValues],
+          labelCount
+        ) as Mail["labels"])
+      : ([] as unknown as Mail["labels"]);
+
+  return {
+    id: generateId(),
+    name: `${firstName} ${lastName}`,
+    email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+    subject: faker.helpers.arrayElement([...emailSubjects]),
+    body: faker.lorem.paragraphs({ min: 2, max: 6 }, "\n\n"),
+    folder: faker.helpers.weightedArrayElement([
+      { value: "inbox" as const, weight: 50 },
+      { value: "sent" as const, weight: 15 },
+      { value: "drafts" as const, weight: 10 },
+      { value: "archive" as const, weight: 10 },
+      { value: "junk" as const, weight: 8 },
+      { value: "trash" as const, weight: 7 },
+    ]),
+    read: faker.datatype.boolean({ probability: 0.6 }),
+    labels,
+    createdAt: faker.date.between({
+      from: new Date("2024-01-01"),
+      to: new Date(),
+    }),
+    updatedAt: null,
+    ...input,
+  };
 }

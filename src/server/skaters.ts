@@ -6,8 +6,43 @@ import {
 } from "@/app/data-grid-live/lib/validation";
 import { DB_TABLES, db } from "@/db";
 
+interface RawSkaterRow {
+  id: string;
+  order: number;
+  name: string | null;
+  email: string | null;
+  stance: string;
+  style: string;
+  status: string;
+  yearsSkating: number | string;
+  startedSkating: string | null;
+  isPro: boolean;
+  tricks: string | string[] | null;
+  media: string | unknown[] | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
 export async function getSkaters() {
-  return db.unsafe(`SELECT * FROM ${DB_TABLES.skaters} ORDER BY "order" ASC`);
+  const rows = await db.unsafe<RawSkaterRow[]>(
+    `SELECT id, "order", name, email, stance, style, status,
+       years_skating AS "yearsSkating",
+       started_skating AS "startedSkating",
+       is_pro AS "isPro",
+       tricks, media,
+       created_at AS "createdAt",
+       updated_at AS "updatedAt"
+     FROM ${DB_TABLES.skaters} ORDER BY "order" ASC`
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    yearsSkating: Number(row.yearsSkating ?? 0),
+    isPro: Boolean(row.isPro),
+    tricks:
+      typeof row.tricks === "string" ? JSON.parse(row.tricks) : row.tricks,
+    media: typeof row.media === "string" ? JSON.parse(row.media) : row.media,
+  }));
 }
 
 export async function createSkaters(body: unknown) {

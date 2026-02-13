@@ -5,6 +5,13 @@ import {
 } from "@/app/lib/validations";
 import { getErrorMessage } from "@/lib/handle-error";
 import {
+  deleteMail,
+  getMailById,
+  getMailFolderCounts,
+  getMails,
+  updateMail,
+} from "@/server/mails";
+import {
   createSkaters,
   getSkaters,
   patchSkaters,
@@ -197,6 +204,82 @@ const server = Bun.serve({
           return json(result);
         } catch (error) {
           return json({ error: getErrorMessage(error) }, { status: 500 });
+        }
+      },
+    },
+    "/api/mails": {
+      GET: async (req) => {
+        try {
+          const url = new URL(req.url);
+          const folder = url.searchParams.get("folder") ?? "inbox";
+          const search = url.searchParams.get("search") ?? "";
+          const unreadOnly = url.searchParams.get("unreadOnly") === "true";
+          return json(
+            await getMails({
+              folder: folder as Parameters<typeof getMails>[0]["folder"],
+              search,
+              unreadOnly,
+            })
+          );
+        } catch (error) {
+          return json({ error: getErrorMessage(error) }, { status: 500 });
+        }
+      },
+    },
+    "/api/mails/folder-counts": {
+      GET: async () => {
+        try {
+          return json(await getMailFolderCounts());
+        } catch (error) {
+          return json({ error: getErrorMessage(error) }, { status: 500 });
+        }
+      },
+    },
+    "/api/mails/:id": {
+      GET: async (req) => {
+        try {
+          const id = req.params.id;
+          if (!id) {
+            return json({ error: "Mail id is required" }, { status: 400 });
+          }
+          const mail = await getMailById(id);
+          if (!mail) {
+            return json({ error: "Mail not found" }, { status: 404 });
+          }
+          return json(mail);
+        } catch (error) {
+          return json({ error: getErrorMessage(error) }, { status: 500 });
+        }
+      },
+      PATCH: async (req) => {
+        try {
+          const id = req.params.id;
+          if (!id) {
+            return json({ error: "Mail id is required" }, { status: 400 });
+          }
+          const body = (await req.json()) as Parameters<typeof updateMail>[0];
+          await updateMail({ ...body, id });
+          return json({ data: null, error: null });
+        } catch (error) {
+          return json(
+            { data: null, error: getErrorMessage(error) },
+            { status: 500 }
+          );
+        }
+      },
+      DELETE: async (req) => {
+        try {
+          const id = req.params.id;
+          if (!id) {
+            return json({ error: "Mail id is required" }, { status: 400 });
+          }
+          await deleteMail(id);
+          return json({ data: null, error: null });
+        } catch (error) {
+          return json(
+            { data: null, error: getErrorMessage(error) },
+            { status: 500 }
+          );
         }
       },
     },

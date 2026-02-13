@@ -24,6 +24,11 @@ const DataGridRenderPage = React.lazy(() =>
     default: module.DataGridRenderPage,
   }))
 );
+const MailPage = React.lazy(() =>
+  import("@/routes/mail-page").then((module) => ({
+    default: module.MailPage,
+  }))
+);
 
 export function App() {
   return (
@@ -42,6 +47,7 @@ export function App() {
             <Route element={<DataGridPage />} path="/data-grid" />
             <Route element={<DataGridLivePage />} path="/data-grid-live" />
             <Route element={<DataGridRenderPage />} path="/data-grid-render" />
+            <Route element={<MailPage />} path="/mail" />
           </Routes>
         </React.Suspense>
       </main>
